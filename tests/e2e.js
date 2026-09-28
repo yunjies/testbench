@@ -66,16 +66,27 @@ function waitForServer(child) {
   let browser;
   let context;
   let userDataDir;
+  let browserHome;
   let passed = false;
   let detail = '';
   let failure;
   try {
     await waitForServer(server);
     const executablePath = findChromium();
+    browserHome = path.join(artifacts, 'browser-home');
+    fs.mkdirSync(browserHome, { recursive: true });
     userDataDir = fs.mkdtempSync(path.join(artifacts, 'chromium-profile-'));
     const launchOptions = {
       headless: true,
       timeout: 10000,
+      env: {
+        ...process.env,
+        HOME: browserHome,
+        XDG_CONFIG_HOME: path.join(browserHome, 'config'),
+        XDG_CACHE_HOME: path.join(browserHome, 'cache'),
+        GSETTINGS_BACKEND: 'memory',
+        DBUS_SESSION_BUS_ADDRESS: '/dev/null'
+      },
       ...(executablePath ? { executablePath } : {}),
       args: [
         '--disable-breakpad',
@@ -119,6 +130,7 @@ function waitForServer(child) {
     if (context) await context.close().catch(() => {});
     else if (browser) await browser.close();
     if (userDataDir) fs.rmSync(userDataDir, { recursive: true, force: true });
+    if (browserHome) fs.rmSync(browserHome, { recursive: true, force: true });
     server.kill('SIGTERM');
     await new Promise((resolve) => {
       server.once('close', resolve);
