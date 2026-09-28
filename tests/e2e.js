@@ -111,6 +111,7 @@ function waitForServer(child) {
   } finally {
     if (context) {
       await context.tracing.stop({ path: tracePath }).catch((error) => {
+        passed = false;
         failure ||= error;
         detail = detail || error.stack || String(error);
       });
