@@ -1,7 +1,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const os = require('node:os');
 const { spawn } = require('node:child_process');
 const { chromium } = require('playwright');
 
@@ -66,13 +65,14 @@ function waitForServer(child) {
 
   let browser;
   let context;
+  let userDataDir;
   let passed = false;
   let detail = '';
   let failure;
   try {
     await waitForServer(server);
     const executablePath = findChromium();
-    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'testbench-chromium-'));
+    userDataDir = fs.mkdtempSync(path.join(artifacts, 'chromium-profile-'));
     const launchOptions = {
       headless: true,
       timeout: 10000,
@@ -117,6 +117,7 @@ function waitForServer(child) {
     }
     if (context) await context.close().catch(() => {});
     else if (browser) await browser.close();
+    if (userDataDir) fs.rmSync(userDataDir, { recursive: true, force: true });
     server.kill('SIGTERM');
     await new Promise((resolve) => {
       server.once('close', resolve);
